@@ -1,229 +1,240 @@
-# Sistema Municipal de Identificacao e Monitoramento de Animais
+# Sistema Municipal de Monitoramento de Animais - Backend
 
-API REST em Node.js + Express + PostgreSQL + Prisma, com foco em seguranca viaria.
+API REST em Node.js + Express + Prisma + PostgreSQL para cadastro e monitoramento de animais, ocorrencias e notificacoes, com autenticacao por sessao e controle de acesso por perfil.
 
-## 1) Estrutura de Pastas
+## Visao Geral
+
+- API com modulos de `usuarios`, `proprietarios`, `agentes`, `animais`, `ocorrencias` e `notificacoes`
+- Autenticacao por token Bearer em tabela de sessoes
+- Perfis de acesso: `ADMIN`, `AGENTE`, `PROPRIETARIO`
+- Geracao automatica de codigo de identificacao do animal no formato `LLNNNN`
+- Criacao automatica de notificacoes de ocorrencia via `WHATSAPP` e `EMAIL` (registro em banco e log de envio)
+
+## Stack
+
+- Node.js 20+
+- Express 4
+- Prisma 5
+- PostgreSQL 16
+- Zod (validacao)
+- Docker + Docker Compose
+
+## Estrutura Principal
 
 ```text
 backend/
-├─ prisma/
-│  ├─ schema.prisma
-│  └─ migrations/
-│     ├─ migration_lock.toml
-│     └─ 20260328000000_init/
-│        └─ migration.sql
-├─ src/
-│  ├─ config/
-│  │  ├─ env.js
-│  │  └─ logger.js
-│  ├─ controllers/
-│  │  ├─ agente.controller.js
-│  │  ├─ animal.controller.js
-│  │  ├─ identificacao.controller.js
-│  │  ├─ notificacao.controller.js
-│  │  ├─ ocorrencia.controller.js
-│  │  └─ proprietario.controller.js
-│  ├─ database/
-│  │  └─ prismaClient.js
-│  ├─ middlewares/
-│  │  ├─ error.middleware.js
-│  │  ├─ notFound.middleware.js
-│  │  └─ validate.middleware.js
-│  ├─ routes/
-│  │  ├─ agentes.routes.js
-│  │  ├─ animais.routes.js
-│  │  ├─ identificacoes.routes.js
-│  │  ├─ index.js
-│  │  ├─ notificacoes.routes.js
-│  │  ├─ ocorrencias.routes.js
-│  │  └─ proprietarios.routes.js
-│  ├─ services/
-│  │  ├─ agente.service.js
-│  │  ├─ animal.service.js
-│  │  ├─ identificacao.service.js
-│  │  ├─ notificacao.service.js
-│  │  ├─ ocorrencia.service.js
-│  │  └─ proprietario.service.js
-│  ├─ utils/
-│  │  ├─ AppError.js
-│  │  ├─ asyncHandler.js
-│  │  ├─ codeGenerator.js
-│  │  └─ cpf.js
-│  ├─ validations/
-│  │  ├─ agente.schema.js
-│  │  ├─ animal.schema.js
-│  │  ├─ common.schema.js
-│  │  ├─ identificacao.schema.js
-│  │  ├─ notificacao.schema.js
-│  │  ├─ ocorrencia.schema.js
-│  │  └─ proprietario.schema.js
-│  ├─ app.js
-│  └─ server.js
-├─ .dockerignore
-├─ .env.example
-├─ docker-compose.yml
-├─ Dockerfile
-├─ package.json
-└─ README.md
+  prisma/
+    schema.prisma
+    migrations/
+      20260328000000_init/
+      20260329090000_auth_users/
+  src/
+    config/
+    constants/
+    controllers/
+    database/
+    middlewares/
+    routes/
+    services/
+    utils/
+    validations/
+    app.js
+    server.js
+  docker-compose.yml
+  Dockerfile
+  .env.example
+  package.json
 ```
 
-## 2) Regras de Negocio Implementadas
+## Variaveis de Ambiente
 
-- Um proprietario possui varios animais.
-- Cada animal possui uma identificacao unica.
-- O codigo da identificacao segue `GBXXXX` e e gerado automaticamente.
-- Ao cadastrar animal (`POST /animais`), a identificacao e criada automaticamente.
-- Ocorrencia e registrada buscando o animal por codigo (`codigoIdentificacao`).
-- CPF de proprietario e unico e validado com algoritmo de CPF.
-- Matricula de agente e unica.
-- Notificacao e vinculada ao proprietario do animal envolvido na ocorrencia.
+Arquivo de referencia: `.env.example`.
 
-## 3) Configuracao do Banco
+```env
+PORT=3000
+DATABASE_URL="postgresql://postgres:postgres@db:5432/municipal_animais?schema=public"
+CORS_ORIGINS="http://localhost:3000,http://localhost:3001"
+AUTH_SESSION_TTL_HOURS=24
+DEFAULT_ADMIN_EMAIL="admin@municipio.local"
+DEFAULT_ADMIN_PASSWORD="admin123456"
+DEFAULT_ADMIN_NAME="Administrador do Sistema"
+```
 
-- ORM: **Prisma**
-- Banco: **PostgreSQL**
-- Arquivo de schema: `prisma/schema.prisma`
-- Migracao inicial: `prisma/migrations/20260328000000_init/migration.sql`
-- Tabelas:
-  - `proprietarios`
-  - `animais`
-  - `identificacoes`
-  - `agentes`
-  - `ocorrencias`
-  - `notificacoes`
+## Executando com Docker (recomendado)
 
-## 4) Docker Configurado
-
-### Subir API + Postgres
+No diretorio `backend`:
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
 
-### Servicos
+Servicos:
 
-- API: `http://localhost:3000`
-- Healthcheck: `GET http://localhost:3000/health`
+- API interna: `http://localhost:3000` (dentro do container)
+- API exposta no host: `http://localhost:3002`
+- Healthcheck: `GET http://localhost:3002/health`
 - PostgreSQL: `localhost:5432`
 
-Credenciais padrao no `docker-compose.yml`:
-- user: `postgres`
-- password: `postgres`
-- database: `municipal_animais`
+Observacao:
+- O container da API executa `prisma migrate deploy` antes de iniciar o servidor.
 
-## 5) Endpoints
+## Executando Local (sem Docker)
 
-### Proprietarios
+No diretorio `backend`:
+
+```bash
+npm install
+cp .env.example .env
+npx prisma generate
+npx prisma migrate deploy
+npm run dev
+```
+
+API local padrao: `http://localhost:3000`
+
+## Usuario Admin Padrao
+
+No boot da API, se nao existir usuario com o e-mail configurado em `DEFAULT_ADMIN_EMAIL`, ele e criado automaticamente com perfil `ADMIN`.
+
+Credenciais padrao de desenvolvimento:
+
+- Email: `admin@municipio.local`
+- Senha: `admin123456`
+
+Troque a senha apos o primeiro acesso.
+
+## Autenticacao
+
+Fluxo:
+
+1. `POST /auth/login` retorna `token`, `expiresAt` e `user`
+2. Enviar header `Authorization: Bearer <token>` nas rotas protegidas
+3. `GET /auth/me` retorna usuario atual
+4. `POST /auth/logout` revoga a sessao
+
+Cadastro publico de proprietario:
+
+- `POST /auth/registrar-proprietario`
+- Cria `proprietario` + `usuario` com perfil `PROPRIETARIO`
+- Ja retorna sessao autenticada
+
+## Perfis e Permissoes
+
+| Recurso | ADMIN | AGENTE | PROPRIETARIO |
+| --- | --- | --- | --- |
+| Dashboard e gestao completa | Sim | Nao | Nao |
+| Modulo de usuarios | Sim | Nao | Nao |
+| Modulo de proprietarios | Sim | Nao | Nao |
+| Modulo de agentes | Sim | Nao | Nao |
+| Listar animais | Sim | Nao | Apenas os proprios |
+| Criar/editar/excluir animais | Sim | Nao | Nao |
+| Buscar animal por codigo | Sim | Sim | Nao |
+| Criar ocorrencia | Sim | Sim (somente para si) | Nao |
+| Listar ocorrencias | Sim | Apenas as proprias | Nao |
+| Alterar status de ocorrencia | Sim | Apenas para `RESOLVIDA` | Nao |
+| Excluir (retirar) ocorrencia | Sim | Nao | Nao |
+| Listar notificacoes | Sim | Nao | Apenas as proprias |
+
+## Endpoints Principais
+
+### Health
+
+- `GET /health`
+
+### Auth
+
+- `POST /auth/login`
+- `POST /auth/registrar-proprietario`
+- `GET /auth/me`
+- `POST /auth/logout`
+
+### Usuarios (admin)
+
+- `GET /usuarios`
+- `POST /usuarios`
+- `PUT /usuarios/:id`
+- `DELETE /usuarios/:id`
+
+### Proprietarios (admin)
+
 - `POST /proprietarios`
 - `GET /proprietarios`
 - `GET /proprietarios/:id`
 - `PUT /proprietarios/:id`
 - `DELETE /proprietarios/:id`
 
-### Animais
-- `POST /animais`
-- `GET /animais`
-- `GET /animais/:id`
+### Agentes (admin)
 
-### Identificacoes
-- `POST /identificacoes`
-
-### Agentes
 - `POST /agentes`
 - `GET /agentes`
+- `PUT /agentes/:id`
+- `DELETE /agentes/:id`
+
+### Animais
+
+- `POST /animais` (admin)
+- `GET /animais` (admin/proprietario)
+- `GET /animais/:id` (admin/proprietario)
+- `GET /animais/codigo/:codigo` (admin/agente)
+- `PUT /animais/:id` (admin)
+- `DELETE /animais/:id` (admin)
 
 ### Ocorrencias
-- `POST /ocorrencias`
-- `GET /ocorrencias`
-- `GET /ocorrencias/:id`
+
+- `POST /ocorrencias` (admin/agente)
+- `GET /ocorrencias` (admin/agente)
+- `GET /ocorrencias/:id` (admin/agente)
+- `PUT /ocorrencias/:id/status` (admin/agente com restricao)
+- `DELETE /ocorrencias/:id` (admin)
 
 ### Notificacoes
-- `POST /notificacoes`
-- `GET /notificacoes`
 
-## 6) Exemplos de Requisicao (JSON)
+- `POST /notificacoes` (admin)
+- `GET /notificacoes` (admin/proprietario)
 
-### POST /proprietarios
+## Regras de Negocio Importantes
 
-```json
-{
-  "nome": "Maria Oliveira",
-  "cpf": "39053344705",
-  "telefone": "11999999999",
-  "email": "maria@exemplo.com",
-  "endereco": "Rua das Acacias, 123"
-}
+- Codigo de identificacao do animal:
+  - Gerado automaticamente no cadastro do animal
+  - Formato `LLNNNN`
+  - `LL` = iniciais do primeiro e ultimo nome do proprietario
+  - `NNNN` = numero aleatorio com 4 digitos
+- Criacao de ocorrencia:
+  - Localiza animal por `codigoIdentificacao`
+  - Cria notificacoes automaticamente para o proprietario em todos os canais disponiveis (`WHATSAPP` e/ou `EMAIL`)
+- Status de ocorrencia:
+  - Agente pode apenas concluir (`RESOLVIDA`)
+  - Admin pode atualizar para qualquer status
+- Exclusoes bloqueadas por vinculos:
+  - Nao remove proprietario com animais/usuario vinculado
+  - Nao remove agente com ocorrencias/usuario vinculado
+  - Nao remove animal com ocorrencias vinculadas
+  - Usuario nao pode excluir a propria conta logada
+
+## Exemplos de Requisicao
+
+Login:
+
+```bash
+curl -X POST http://localhost:3002/auth/login \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"admin@municipio.local\",\"senha\":\"admin123456\"}"
 ```
 
-### PUT /proprietarios/:id
+Criar ocorrencia:
 
-```json
-{
-  "telefone": "11988887777",
-  "endereco": "Avenida Central, 450"
-}
+```bash
+curl -X POST http://localhost:3002/ocorrencias \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -d "{\"codigoIdentificacao\":\"MO3247\",\"agenteId\":\"UUID_DO_AGENTE\",\"local\":\"Rodovia KM 12\",\"descricao\":\"Animal solto em area de risco\",\"status\":\"ABERTA\"}"
 ```
 
-### POST /animais
+## Scripts NPM
 
-```json
-{
-  "nome": "Trovão",
-  "especie": "Cavalo",
-  "raca": "Mangalarga",
-  "porte": "GRANDE",
-  "sexo": "MACHO",
-  "cor": "Castanho",
-  "dataNascimento": "2021-02-10T00:00:00.000Z",
-  "proprietarioId": "UUID_DO_PROPRIETARIO"
-}
-```
-
-### POST /identificacoes
-
-```json
-{
-  "animalId": "UUID_DO_ANIMAL"
-}
-```
-
-### POST /agentes
-
-```json
-{
-  "nome": "Carlos Andrade",
-  "matricula": "AGT-001",
-  "telefone": "11977776666",
-  "email": "carlos.agente@prefeitura.gov.br"
-}
-```
-
-### POST /ocorrencias
-
-```json
-{
-  "codigoIdentificacao": "GB3247",
-  "agenteId": "UUID_DO_AGENTE",
-  "local": "Rodovia Municipal KM 12",
-  "descricao": "Animal solto proximo a curva de alto risco",
-  "status": "ABERTA"
-}
-```
-
-### POST /notificacoes
-
-```json
-{
-  "ocorrenciaId": "UUID_DA_OCORRENCIA",
-  "mensagem": "Seu animal foi encontrado solto e representa risco viario.",
-  "canal": "WHATSAPP",
-  "status": "PENDENTE"
-}
-```
-
-## 7) Observacoes Tecnicas
-
-- Middleware global de erro implementado.
-- Logs simples de requisicao/resposta implementados.
-- Validacao de payloads com Zod.
-- Organizacao em camadas: `controllers`, `services`, `routes`, `database`.
+- `npm run dev` - desenvolvimento com nodemon
+- `npm start` - execucao de producao
+- `npm run prisma:generate`
+- `npm run prisma:migrate`
+- `npm run prisma:deploy`
+- `npm run prisma:studio`
