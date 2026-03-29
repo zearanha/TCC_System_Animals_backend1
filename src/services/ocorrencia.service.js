@@ -143,8 +143,39 @@ async function getOcorrenciaById(id, scope) {
   return ocorrencia;
 }
 
+async function updateOcorrenciaStatus(id, status, scope) {
+  const ocorrencia = await getOcorrenciaById(id, scope);
+
+  if (scope?.perfil === USER_ROLES.AGENTE && status !== "RESOLVIDA") {
+    throw new AppError("Agente pode apenas concluir ocorrencias (status RESOLVIDA).", 403);
+  }
+
+  return prisma.ocorrencia.update({
+    where: { id: ocorrencia.id },
+    data: { status },
+    include: occurrenceInclude(),
+  });
+}
+
+async function deleteOcorrencia(id) {
+  const existing = await prisma.ocorrencia.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    throw new AppError("Ocorrencia nao encontrada.", 404);
+  }
+
+  await prisma.ocorrencia.delete({
+    where: { id },
+  });
+}
+
 module.exports = {
   createOcorrencia,
   listOcorrencias,
   getOcorrenciaById,
+  updateOcorrenciaStatus,
+  deleteOcorrencia,
 };

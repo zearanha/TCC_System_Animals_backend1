@@ -16,8 +16,25 @@ const getById = asyncHandler(async (req, res) => {
   return res.status(200).json(ocorrencia);
 });
 
+const updateStatus = asyncHandler(async (req, res) => {
+  const ocorrencia = await ocorrenciaService.updateOcorrenciaStatus(
+    req.params.id,
+    req.body.status,
+    req.auth
+  );
+
+  return res.status(200).json(ocorrencia);
+});
+
+const remove = asyncHandler(async (req, res) => {
+  await ocorrenciaService.deleteOcorrencia(req.params.id);
+  return res.status(204).send();
+});
+
 module.exports = {
   create,
   list,
   getById,
+  updateStatus,
+  remove,
 };

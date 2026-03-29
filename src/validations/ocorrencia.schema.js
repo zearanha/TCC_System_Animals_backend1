@@ -31,8 +31,17 @@ const getOcorrenciaByIdSchema = z.object({
   query: emptySchema,
 });
 
+const updateOcorrenciaStatusSchema = z.object({
+  body: z.object({
+    status: z.enum(["ABERTA", "RESOLVIDA", "CANCELADA"]),
+  }),
+  params: idParamsSchema,
+  query: emptySchema,
+});
+
 module.exports = {
   createOcorrenciaSchema,
   listOcorrenciasSchema,
   getOcorrenciaByIdSchema,
+  updateOcorrenciaStatusSchema,
 };
