@@ -4,7 +4,10 @@ const createOcorrenciaSchema = z.object({
   body: z.object({
     codigoIdentificacao: z
       .string()
-      .regex(/^GB\d{4}$/i, "codigoIdentificacao deve seguir o padrao GB1234.")
+      .regex(
+        /^[A-Z]{2}\d{4}$/i,
+        "codigoIdentificacao deve seguir o padrao LL1234."
+      )
       .transform((value) => value.toUpperCase()),
     agenteId: z.string().uuid("agenteId deve ser UUID valido."),
     local: z.string().min(3).max(255),

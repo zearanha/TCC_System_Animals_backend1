@@ -5,7 +5,7 @@ const { generateUniqueAnimalCode } = require("../utils/codeGenerator");
 async function createAnimal(payload) {
   const owner = await prisma.proprietario.findUnique({
     where: { id: payload.proprietarioId },
-    select: { id: true },
+    select: { id: true, nome: true },
   });
 
   if (!owner) {
@@ -26,7 +26,7 @@ async function createAnimal(payload) {
       },
     });
 
-    const codigo = await generateUniqueAnimalCode(tx);
+    const codigo = await generateUniqueAnimalCode(tx, owner.nome);
 
     await tx.identificacao.create({
       data: {

@@ -7,6 +7,11 @@ async function createIdentificacao(payload) {
     where: { id: payload.animalId },
     include: {
       identificacao: true,
+      proprietario: {
+        select: {
+          nome: true,
+        },
+      },
     },
   });
 
@@ -18,7 +23,7 @@ async function createIdentificacao(payload) {
     throw new AppError("Este animal ja possui identificacao.", 409);
   }
 
-  const codigo = await generateUniqueAnimalCode(prisma);
+  const codigo = await generateUniqueAnimalCode(prisma, animal.proprietario?.nome);
 
   return prisma.identificacao.create({
     data: {
