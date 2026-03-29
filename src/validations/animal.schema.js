@@ -15,6 +15,27 @@ const createAnimalSchema = z.object({
   query: emptySchema,
 });
 
+const updateAnimalBodySchema = z
+  .object({
+    nome: z.string().min(2).optional(),
+    especie: z.string().min(2).optional(),
+    raca: z.string().max(80).optional(),
+    porte: z.string().max(30).optional(),
+    sexo: z.string().max(20).optional(),
+    cor: z.string().max(50).optional(),
+    dataNascimento: z.coerce.date().optional(),
+    proprietarioId: z.string().uuid("proprietarioId deve ser UUID valido.").optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "Envie ao menos um campo para atualizacao.",
+  });
+
+const updateAnimalSchema = z.object({
+  body: updateAnimalBodySchema,
+  params: idParamsSchema,
+  query: emptySchema,
+});
+
 const listAnimaisSchema = z.object({
   body: emptySchema,
   params: emptySchema,
@@ -27,8 +48,20 @@ const getAnimalByIdSchema = z.object({
   query: emptySchema,
 });
 
+const getAnimalByCodigoSchema = z.object({
+  body: emptySchema,
+  params: z.object({
+    codigo: z
+      .string()
+      .regex(/^[A-Z]{2}\d{4}$/i, "codigo deve seguir o padrao LL1234."),
+  }),
+  query: emptySchema,
+});
+
 module.exports = {
   createAnimalSchema,
   listAnimaisSchema,
   getAnimalByIdSchema,
+  getAnimalByCodigoSchema,
+  updateAnimalSchema,
 };

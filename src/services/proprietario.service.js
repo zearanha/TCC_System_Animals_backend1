@@ -128,6 +128,18 @@ async function deleteProprietario(id) {
     );
   }
 
+  const hasUser = await prisma.usuario.findFirst({
+    where: { proprietarioId: id },
+    select: { id: true },
+  });
+
+  if (hasUser) {
+    throw new AppError(
+      "Nao e possivel remover proprietario com usuario vinculado.",
+      409
+    );
+  }
+
   await prisma.proprietario.delete({
     where: { id },
   });

@@ -28,6 +28,10 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@db:5432/municipal_animais?schema=public
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      AUTH_SESSION_TTL_HOURS: 24
+      DEFAULT_ADMIN_EMAIL: admin@municipio.local
+      DEFAULT_ADMIN_PASSWORD: admin123456
+      DEFAULT_ADMIN_NAME: Administrador do Sistema
     ports:
       - "3002:3000"
 

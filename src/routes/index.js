@@ -1,4 +1,6 @@
 const { Router } = require("express");
+const authRoutes = require("./auth.routes");
+const usuariosRoutes = require("./usuarios.routes");
 const proprietariosRoutes = require("./proprietarios.routes");
 const animaisRoutes = require("./animais.routes");
 const identificacoesRoutes = require("./identificacoes.routes");
@@ -8,6 +10,8 @@ const notificacoesRoutes = require("./notificacoes.routes");
 
 const router = Router();
 
+router.use("/auth", authRoutes);
+router.use("/usuarios", usuariosRoutes);
 router.use("/proprietarios", proprietariosRoutes);
 router.use("/animais", animaisRoutes);
 router.use("/identificacoes", identificacoesRoutes);

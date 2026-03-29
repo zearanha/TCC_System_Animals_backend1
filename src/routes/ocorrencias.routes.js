@@ -1,6 +1,8 @@
 const { Router } = require("express");
 const controller = require("../controllers/ocorrencia.controller");
 const validate = require("../middlewares/validate.middleware");
+const { requireAuth, requireRoles } = require("../middlewares/auth.middleware");
+const { USER_ROLES } = require("../constants/roles");
 const {
   createOcorrenciaSchema,
   listOcorrenciasSchema,
@@ -8,6 +10,8 @@ const {
 } = require("../validations/ocorrencia.schema");
 
 const router = Router();
+
+router.use(requireAuth, requireRoles(USER_ROLES.ADMIN, USER_ROLES.AGENTE));
 
 router.post("/", validate(createOcorrenciaSchema), controller.create);
 router.get("/", validate(listOcorrenciasSchema), controller.list);

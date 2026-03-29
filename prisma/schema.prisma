@@ -26,6 +26,12 @@ enum NotificacaoStatus {
   FALHA
 }
 
+enum UsuarioPerfil {
+  ADMIN
+  AGENTE
+  PROPRIETARIO
+}
+
 model Proprietario {
   id          String       @id @default(uuid()) @db.Uuid
   nome        String
@@ -37,6 +43,7 @@ model Proprietario {
   updatedAt   DateTime     @updatedAt @map("updated_at")
   animais     Animal[]
   notificacoes Notificacao[]
+  usuario      Usuario?
 
   @@map("proprietarios")
 }
@@ -81,8 +88,41 @@ model Agente {
   createdAt  DateTime    @default(now()) @map("created_at")
   updatedAt  DateTime    @updatedAt @map("updated_at")
   ocorrencias Ocorrencia[]
+  usuario     Usuario?
 
   @@map("agentes")
+}
+
+model Usuario {
+  id             String        @id @default(uuid()) @db.Uuid
+  nome           String
+  email          String        @unique @db.VarChar(150)
+  senhaHash      String        @map("senha_hash") @db.VarChar(255)
+  perfil         UsuarioPerfil
+  ativo          Boolean       @default(true)
+  proprietarioId String?       @unique @map("proprietario_id") @db.Uuid
+  agenteId       String?       @unique @map("agente_id") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  proprietario   Proprietario? @relation(fields: [proprietarioId], references: [id], onDelete: Restrict)
+  agente         Agente?       @relation(fields: [agenteId], references: [id], onDelete: Restrict)
+  sessoes        Sessao[]
+
+  @@map("usuarios")
+}
+
+model Sessao {
+  id         String    @id @default(uuid()) @db.Uuid
+  token      String    @unique @db.VarChar(128)
+  usuarioId  String    @map("usuario_id") @db.Uuid
+  expiraEm   DateTime  @map("expira_em")
+  revogadaEm DateTime? @map("revogada_em")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  usuario    Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("sessoes")
 }
 
 model Ocorrencia {

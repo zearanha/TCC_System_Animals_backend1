@@ -89,6 +89,15 @@ async function deleteAgente(id) {
     throw new AppError("Nao e possivel remover agente com ocorrencias vinculadas.", 409);
   }
 
+  const hasUser = await prisma.usuario.findFirst({
+    where: { agenteId: id },
+    select: { id: true },
+  });
+
+  if (hasUser) {
+    throw new AppError("Nao e possivel remover agente com usuario vinculado.", 409);
+  }
+
   await prisma.agente.delete({
     where: { id },
   });

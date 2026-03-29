@@ -6,8 +6,8 @@ const create = asyncHandler(async (req, res) => {
   return res.status(201).json(notificacao);
 });
 
-const list = asyncHandler(async (_req, res) => {
-  const notificacoes = await notificacaoService.listNotificacoes();
+const list = asyncHandler(async (req, res) => {
+  const notificacoes = await notificacaoService.listNotificacoes(req.auth);
   return res.status(200).json(notificacoes);
 });
 
