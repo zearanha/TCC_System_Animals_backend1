@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OcorrenciaStatus {
+  ABERTA
+  RESOLVIDA
+  CANCELADA
+}
+
+enum NotificacaoCanal {
+  SMS
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificacaoStatus {
+  PENDENTE
+  ENVIADA
+  FALHA
+}
+
+model Proprietario {
+  id          String       @id @default(uuid()) @db.Uuid
+  nome        String
+  cpf         String       @unique @db.VarChar(11)
+  telefone    String?      @db.VarChar(20)
+  email       String?      @db.VarChar(150)
+  endereco    String?      @db.VarChar(255)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  animais     Animal[]
+  notificacoes Notificacao[]
+
+  @@map("proprietarios")
+}
+
+model Animal {
+  id             String        @id @default(uuid()) @db.Uuid
+  nome           String
+  especie        String        @db.VarChar(80)
+  raca           String?       @db.VarChar(80)
+  porte          String?       @db.VarChar(30)
+  sexo           String?       @db.VarChar(20)
+  cor            String?       @db.VarChar(50)
+  dataNascimento DateTime?     @map("data_nascimento")
+  proprietarioId String        @map("proprietario_id") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  proprietario   Proprietario  @relation(fields: [proprietarioId], references: [id], onDelete: Restrict)
+  identificacao  Identificacao?
+  ocorrencias    Ocorrencia[]
+
+  @@index([proprietarioId])
+  @@map("animais")
+}
+
+model Identificacao {
+  id        String   @id @default(uuid()) @db.Uuid
+  codigo    String   @unique @db.VarChar(6)
+  animalId  String   @unique @map("animal_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  animal    Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@map("identificacoes")
+}
+
+model Agente {
+  id         String      @id @default(uuid()) @db.Uuid
+  nome       String
+  matricula  String      @unique @db.VarChar(30)
+  telefone   String?     @db.VarChar(20)
+  email      String?     @db.VarChar(150)
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  ocorrencias Ocorrencia[]
+
+  @@map("agentes")
+}
+
+model Ocorrencia {
+  id            String           @id @default(uuid()) @db.Uuid
+  animalId      String           @map("animal_id") @db.Uuid
+  agenteId      String           @map("agente_id") @db.Uuid
+  local         String           @db.VarChar(255)
+  descricao     String           @db.VarChar(500)
+  dataOcorrencia DateTime        @default(now()) @map("data_ocorrencia")
+  status        OcorrenciaStatus @default(ABERTA)
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+  animal        Animal           @relation(fields: [animalId], references: [id], onDelete: Restrict)
+  agente        Agente           @relation(fields: [agenteId], references: [id], onDelete: Restrict)
+  notificacoes  Notificacao[]
+
+  @@index([animalId])
+  @@index([agenteId])
+  @@map("ocorrencias")
+}
+
+model Notificacao {
+  id            String            @id @default(uuid()) @db.Uuid
+  ocorrenciaId  String            @map("ocorrencia_id") @db.Uuid
+  proprietarioId String           @map("proprietario_id") @db.Uuid
+  mensagem      String            @db.VarChar(500)
+  canal         NotificacaoCanal  @default(SMS)
+  status        NotificacaoStatus @default(PENDENTE)
+  dataEnvio     DateTime?         @map("data_envio")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  ocorrencia    Ocorrencia        @relation(fields: [ocorrenciaId], references: [id], onDelete: Cascade)
+  proprietario  Proprietario      @relation(fields: [proprietarioId], references: [id], onDelete: Restrict)
+
+  @@index([ocorrenciaId])
+  @@index([proprietarioId])
+  @@map("notificacoes")
+}
