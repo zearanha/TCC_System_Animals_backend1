@@ -2,14 +2,6 @@
 
 API REST em Node.js + Express + Prisma + PostgreSQL para cadastro e monitoramento de animais, ocorrencias e notificacoes, com autenticacao por sessao e controle de acesso por perfil.
 
-## Visao Geral
-
-- API com modulos de `usuarios`, `proprietarios`, `agentes`, `animais`, `ocorrencias` e `notificacoes`
-- Autenticacao por token Bearer em tabela de sessoes
-- Perfis de acesso: `ADMIN`, `AGENTE`, `PROPRIETARIO`
-- Geracao automatica de codigo de identificacao do animal no formato `LLNNNN`
-- Criacao automatica de notificacoes de ocorrencia via `WHATSAPP` e `EMAIL` (registro em banco e log de envio)
-
 ## Stack
 
 - Node.js 20+
@@ -19,15 +11,22 @@ API REST em Node.js + Express + Prisma + PostgreSQL para cadastro e monitorament
 - Zod (validacao)
 - Docker + Docker Compose
 
-## Estrutura Principal
+## Funcionalidades
+
+- Modulos de `usuarios`, `proprietarios`, `agentes`, `animais`, `ocorrencias` e `notificacoes`
+- Autenticacao por token Bearer com sessoes persistidas
+- Perfis de acesso: `ADMIN`, `AGENTE`, `PROPRIETARIO`
+- Geracao automatica de codigo de identificacao de animal no formato `LLNNNN`
+- Criacao automatica de notificacoes de ocorrencia (`WHATSAPP` e `EMAIL`) quando aplicavel
+- Seed automatico do usuario admin padrao no boot da API
+
+## Estrutura
 
 ```text
-backend/
+TCC_System_Animals_backend1/
   prisma/
     schema.prisma
     migrations/
-      20260328000000_init/
-      20260329090000_auth_users/
   src/
     config/
     constants/
@@ -60,27 +59,19 @@ DEFAULT_ADMIN_PASSWORD="admin123456"
 DEFAULT_ADMIN_NAME="Administrador do Sistema"
 ```
 
-## Executando com Docker (recomendado)
-
-No diretorio `backend`:
+## Como Rodar com Docker
 
 ```bash
 docker compose up -d --build
 ```
 
-Servicos:
+Endpoints principais:
 
-- API interna: `http://localhost:3000` (dentro do container)
-- API exposta no host: `http://localhost:3002`
+- API (host): `http://localhost:3002`
 - Healthcheck: `GET http://localhost:3002/health`
 - PostgreSQL: `localhost:5432`
 
-Observacao:
-- O container da API executa `prisma migrate deploy` antes de iniciar o servidor.
-
-## Executando Local (sem Docker)
-
-No diretorio `backend`:
+## Como Rodar Local
 
 ```bash
 npm install
@@ -90,25 +81,23 @@ npx prisma migrate deploy
 npm run dev
 ```
 
-API local padrao: `http://localhost:3000`
+API local padrao:
+
+- `http://localhost:3000`
 
 ## Usuario Admin Padrao
 
-No boot da API, se nao existir usuario com o e-mail configurado em `DEFAULT_ADMIN_EMAIL`, ele e criado automaticamente com perfil `ADMIN`.
+No boot da API, se nao existir usuario com o e-mail configurado em `DEFAULT_ADMIN_EMAIL`, um usuario `ADMIN` e criado automaticamente.
 
 Credenciais padrao de desenvolvimento:
 
 - Email: `admin@municipio.local`
 - Senha: `admin123456`
 
-Troque a senha apos o primeiro acesso.
-
-## Autenticacao
-
-Fluxo:
+## Fluxo de Autenticacao
 
 1. `POST /auth/login` retorna `token`, `expiresAt` e `user`
-2. Enviar header `Authorization: Bearer <token>` nas rotas protegidas
+2. Enviar `Authorization: Bearer <token>` nas rotas protegidas
 3. `GET /auth/me` retorna usuario atual
 4. `POST /auth/logout` revoga a sessao
 
@@ -122,22 +111,18 @@ Cadastro publico de proprietario:
 
 | Recurso | ADMIN | AGENTE | PROPRIETARIO |
 | --- | --- | --- | --- |
-| Dashboard e gestao completa | Sim | Nao | Nao |
-| Modulo de usuarios | Sim | Nao | Nao |
-| Modulo de proprietarios | Sim | Nao | Nao |
-| Modulo de agentes | Sim | Nao | Nao |
-| Listar animais | Sim | Nao | Apenas os proprios |
-| Criar/editar/excluir animais | Sim | Nao | Nao |
+| Gestao de usuarios/proprietarios/agentes | Sim | Nao | Nao |
+| Animais - listar | Sim | Nao | Apenas os proprios |
+| Animais - criar/editar/excluir | Sim | Nao | Nao |
 | Buscar animal por codigo | Sim | Sim | Nao |
-| Criar ocorrencia | Sim | Sim (somente para si) | Nao |
-| Listar ocorrencias | Sim | Apenas as proprias | Nao |
-| Alterar status de ocorrencia | Sim | Apenas para `RESOLVIDA` | Nao |
-| Excluir (retirar) ocorrencia | Sim | Nao | Nao |
-| Listar notificacoes | Sim | Nao | Apenas as proprias |
+| Ocorrencias - criar/listar | Sim | Sim (restrito ao vinculo) | Nao |
+| Ocorrencias - alterar status | Sim | Apenas para `RESOLVIDA` | Nao |
+| Ocorrencias - excluir | Sim | Nao | Nao |
+| Notificacoes - listar | Sim | Nao | Apenas as proprias |
 
 ## Endpoints Principais
 
-### Health
+### Sistema
 
 - `GET /health`
 
@@ -194,43 +179,26 @@ Cadastro publico de proprietario:
 
 ## Regras de Negocio Importantes
 
-- Codigo de identificacao do animal:
+- Codigo de identificacao:
   - Gerado automaticamente no cadastro do animal
   - Formato `LLNNNN`
-  - `LL` = iniciais do primeiro e ultimo nome do proprietario
-  - `NNNN` = numero aleatorio com 4 digitos
-- Criacao de ocorrencia:
-  - Localiza animal por `codigoIdentificacao`
-  - Cria notificacoes automaticamente para o proprietario em todos os canais disponiveis (`WHATSAPP` e/ou `EMAIL`)
-- Status de ocorrencia:
-  - Agente pode apenas concluir (`RESOLVIDA`)
-  - Admin pode atualizar para qualquer status
-- Exclusoes bloqueadas por vinculos:
-  - Nao remove proprietario com animais/usuario vinculado
-  - Nao remove agente com ocorrencias/usuario vinculado
-  - Nao remove animal com ocorrencias vinculadas
+- Ocorrencias:
+  - Sao registradas por `codigoIdentificacao`
+  - Disparam notificacoes automaticas para canais disponiveis do proprietario
+- Restricoes:
+  - Agente so pode concluir ocorrencia (`RESOLVIDA`)
+  - Exclusoes sao bloqueadas quando ha vinculos ativos
   - Usuario nao pode excluir a propria conta logada
 
-## Exemplos de Requisicao
+## Integracao com o Frontend
 
-Login:
+Frontend (Vite) espera a API em:
 
-```bash
-curl -X POST http://localhost:3002/auth/login \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"admin@municipio.local\",\"senha\":\"admin123456\"}"
-```
+- `VITE_API_BASE_URL=http://localhost:3002`
 
-Criar ocorrencia:
+Se voce rodar o backend local fora do Docker (`http://localhost:3000`), ajuste o `.env` do frontend.
 
-```bash
-curl -X POST http://localhost:3002/ocorrencias \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer SEU_TOKEN" \
-  -d "{\"codigoIdentificacao\":\"MO3247\",\"agenteId\":\"UUID_DO_AGENTE\",\"local\":\"Rodovia KM 12\",\"descricao\":\"Animal solto em area de risco\",\"status\":\"ABERTA\"}"
-```
-
-## Scripts NPM
+## Scripts
 
 - `npm run dev` - desenvolvimento com nodemon
 - `npm start` - execucao de producao
