@@ -2,6 +2,9 @@ const prisma = require("../database/prismaClient");
 const AppError = require("../utils/AppError");
 const { logInfo, logError } = require("../config/logger");
 const { USER_ROLES } = require("../constants/roles");
+const {
+  dispatchChannelNotification: deliverNotification,
+} = require("./notification-delivery.service");
 
 function notificationInclude() {
   return {
@@ -9,7 +12,13 @@ function notificationInclude() {
       include: {
         animal: {
           include: {
-            identificacao: true,
+            identificacao: {
+              include: {
+                imagens: {
+                  orderBy: { createdAt: "desc" },
+                },
+              },
+            },
           },
         },
         agente: true,
@@ -54,9 +63,10 @@ function getDeliveryTargets(proprietario) {
 
 async function dispatchChannelNotification(target, message, context) {
   try {
-    // Ponto unico para integrar provedores reais de envio no futuro.
+    await deliverNotification(target, message, context);
+
     logInfo(
-      `Notificacao enviada via ${target.canal} para ${target.destino} (ocorrencia ${context.ocorrenciaId})`
+      `Notificacao entregue via ${target.canal} para ${target.destino} (ocorrencia ${context.ocorrenciaId})`
     );
 
     return {
@@ -67,7 +77,7 @@ async function dispatchChannelNotification(target, message, context) {
     };
   } catch (error) {
     logError(
-      `Falha ao enviar notificacao via ${target.canal} para ${target.destino} (ocorrencia ${context.ocorrenciaId})`,
+      `Falha ao entregar notificacao via ${target.canal} para ${target.destino} (ocorrencia ${context.ocorrenciaId})`,
       {
         message: error?.message,
       }

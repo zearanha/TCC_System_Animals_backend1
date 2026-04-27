@@ -1,6 +1,7 @@
 const prisma = require("../database/prismaClient");
 const AppError = require("../utils/AppError");
 const { isValidCPF, normalizeCPF } = require("../utils/cpf");
+const { removeUploadByUrl, toPublicUploadUrl } = require("../utils/uploads");
 
 async function createProprietario(payload) {
   const cpf = normalizeCPF(payload.cpf);
@@ -37,7 +38,13 @@ async function listProprietarios() {
     include: {
       animais: {
         include: {
-          identificacao: true,
+          identificacao: {
+            include: {
+              imagens: {
+                orderBy: { createdAt: "desc" },
+              },
+            },
+          },
         },
       },
     },
@@ -50,7 +57,13 @@ async function getProprietarioById(id) {
     include: {
       animais: {
         include: {
-          identificacao: true,
+          identificacao: {
+            include: {
+              imagens: {
+                orderBy: { createdAt: "desc" },
+              },
+            },
+          },
         },
       },
       notificacoes: true,
@@ -64,10 +77,10 @@ async function getProprietarioById(id) {
   return proprietario;
 }
 
-async function updateProprietario(id, payload) {
+async function updateProprietario(id, payload = {}, file = null) {
   const existing = await prisma.proprietario.findUnique({
     where: { id },
-    select: { id: true, cpf: true },
+    select: { id: true, cpf: true, fotoPerfilUrl: true },
   });
 
   if (!existing) {
@@ -101,10 +114,30 @@ async function updateProprietario(id, payload) {
     data.cpf = normalizedCPF;
   }
 
-  return prisma.proprietario.update({
+  let fotoPerfilUrl = null;
+  if (file?.path) {
+    fotoPerfilUrl = toPublicUploadUrl(file.path);
+    data.fotoPerfilUrl = fotoPerfilUrl;
+  }
+
+  const updated = await prisma.proprietario.update({
     where: { id },
     data,
   });
+
+  if (fotoPerfilUrl && existing.fotoPerfilUrl && existing.fotoPerfilUrl !== fotoPerfilUrl) {
+    await removeUploadByUrl(existing.fotoPerfilUrl);
+  }
+
+  return updated;
+}
+
+async function updateFotoPerfilProprietario(id, file) {
+  if (!file?.path) {
+    throw new AppError("Arquivo de foto nao enviado.", 400);
+  }
+
+  return updateProprietario(id, {}, file);
 }
 
 async function deleteProprietario(id) {
@@ -150,5 +183,6 @@ module.exports = {
   listProprietarios,
   getProprietarioById,
   updateProprietario,
+  updateFotoPerfilProprietario,
   deleteProprietario,
 };

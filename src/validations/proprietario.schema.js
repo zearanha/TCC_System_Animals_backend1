@@ -19,13 +19,10 @@ const updateProprietarioBodySchema = z
     telefone: z.string().min(8).max(20).optional(),
     email: z.string().email().optional(),
     endereco: z.string().max(255).optional(),
-  })
-  .refine((data) => Object.keys(data).length > 0, {
-    message: "Envie ao menos um campo para atualizacao.",
   });
 
 const updateProprietarioSchema = z.object({
-  body: updateProprietarioBodySchema,
+  body: updateProprietarioBodySchema.optional().default({}),
   params: idParamsSchema,
   query: emptySchema,
 });

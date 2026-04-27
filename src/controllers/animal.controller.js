@@ -26,6 +26,22 @@ const update = asyncHandler(async (req, res) => {
   return res.status(200).json(animal);
 });
 
+const uploadIdentificacaoImagens = asyncHandler(async (req, res) => {
+  const animal = await animalService.uploadAnimalIdentificacaoImagens(
+    req.params.id,
+    req.files
+  );
+  return res.status(200).json(animal);
+});
+
+const deleteIdentificacaoImagem = asyncHandler(async (req, res) => {
+  const animal = await animalService.deleteAnimalIdentificacaoImagem(
+    req.params.id,
+    req.params.imagemId
+  );
+  return res.status(200).json(animal);
+});
+
 const remove = asyncHandler(async (req, res) => {
   await animalService.deleteAnimal(req.params.id);
   return res.status(204).send();
@@ -37,5 +53,7 @@ module.exports = {
   getById,
   getByCodigo,
   update,
+  uploadIdentificacaoImagens,
+  deleteIdentificacaoImagem,
   remove,
 };

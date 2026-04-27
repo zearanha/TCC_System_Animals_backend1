@@ -9,7 +9,12 @@ const {
   getAnimalByIdSchema,
   getAnimalByCodigoSchema,
   updateAnimalSchema,
+  uploadAnimalImagesSchema,
+  deleteAnimalImageSchema,
 } = require("../validations/animal.schema");
+const {
+  uploadIdentificacaoImagens,
+} = require("../middlewares/upload.middleware");
 
 const router = Router();
 
@@ -39,6 +44,33 @@ router.put(
   requireRoles(USER_ROLES.ADMIN),
   validate(updateAnimalSchema),
   controller.update
+);
+router.post(
+  "/:id/imagens-identificacao",
+  requireRoles(USER_ROLES.ADMIN),
+  validate(uploadAnimalImagesSchema),
+  uploadIdentificacaoImagens.array("imagens", 5),
+  controller.uploadIdentificacaoImagens
+);
+router.put(
+  "/:id/imagens-identificacao",
+  requireRoles(USER_ROLES.ADMIN),
+  validate(uploadAnimalImagesSchema),
+  uploadIdentificacaoImagens.array("imagens", 5),
+  controller.uploadIdentificacaoImagens
+);
+router.patch(
+  "/:id/imagens-identificacao",
+  requireRoles(USER_ROLES.ADMIN),
+  validate(uploadAnimalImagesSchema),
+  uploadIdentificacaoImagens.array("imagens", 5),
+  controller.uploadIdentificacaoImagens
+);
+router.delete(
+  "/:id/imagens-identificacao/:imagemId",
+  requireRoles(USER_ROLES.ADMIN),
+  validate(deleteAnimalImageSchema),
+  controller.deleteIdentificacaoImagem
 );
 router.delete(
   "/:id",

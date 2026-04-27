@@ -10,7 +10,13 @@ function occurrenceInclude() {
     animal: {
       include: {
         proprietario: true,
-        identificacao: true,
+        identificacao: {
+          include: {
+            imagens: {
+              orderBy: { createdAt: "desc" },
+            },
+          },
+        },
       },
     },
     agente: true,

@@ -9,6 +9,13 @@ function errorMiddleware(error, _req, res, _next) {
     });
   }
 
+  if (error?.name === "MulterError") {
+    return res.status(400).json({
+      error: "Erro no upload de arquivo.",
+      details: error.message,
+    });
+  }
+
   if (error instanceof AppError) {
     return res.status(error.statusCode).json({
       error: error.message,

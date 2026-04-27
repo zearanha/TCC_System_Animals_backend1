@@ -2,11 +2,18 @@ const prisma = require("../database/prismaClient");
 const AppError = require("../utils/AppError");
 const { generateUniqueAnimalCode } = require("../utils/codeGenerator");
 const { USER_ROLES } = require("../constants/roles");
+const { removeUploadByUrl, toPublicUploadUrl } = require("../utils/uploads");
 
 function animalInclude() {
   return {
     proprietario: true,
-    identificacao: true,
+    identificacao: {
+      include: {
+        imagens: {
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    },
     ocorrencias: true,
   };
 }
@@ -56,7 +63,13 @@ async function createAnimal(payload) {
       where: { id: animal.id },
       include: {
         proprietario: true,
-        identificacao: true,
+        identificacao: {
+          include: {
+            imagens: {
+              orderBy: { createdAt: "desc" },
+            },
+          },
+        },
       },
     });
   });
@@ -105,7 +118,13 @@ async function getAnimalByCodigo(codigo, scope) {
     },
     include: {
       proprietario: true,
-      identificacao: true,
+      identificacao: {
+        include: {
+          imagens: {
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      },
       ocorrencias: {
         include: {
           agente: true,
@@ -160,16 +179,117 @@ async function updateAnimal(id, payload) {
     data,
     include: {
       proprietario: true,
-      identificacao: true,
+      identificacao: {
+        include: {
+          imagens: {
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      },
       ocorrencias: true,
     },
+  });
+}
+
+async function uploadAnimalIdentificacaoImagens(id, files) {
+  if (!Array.isArray(files) || files.length === 0) {
+    throw new AppError("Envie ao menos uma imagem de identificacao.", 400);
+  }
+
+  const animal = await prisma.animal.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      identificacao: {
+        select: { id: true },
+      },
+    },
+  });
+
+  if (!animal) {
+    throw new AppError("Animal nao encontrado.", 404);
+  }
+
+  if (!animal.identificacao) {
+    throw new AppError("Animal sem identificacao vinculada.", 409);
+  }
+
+  await prisma.$transaction(
+    files.map((file) =>
+      prisma.identificacaoImagem.create({
+        data: {
+          identificacaoId: animal.identificacao.id,
+          imagemUrl: toPublicUploadUrl(file.path),
+        },
+      })
+    )
+  );
+
+  return prisma.animal.findUnique({
+    where: { id },
+    include: animalInclude(),
+  });
+}
+
+async function deleteAnimalIdentificacaoImagem(id, imagemId) {
+  const animal = await prisma.animal.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      identificacao: {
+        select: { id: true },
+      },
+    },
+  });
+
+  if (!animal) {
+    throw new AppError("Animal nao encontrado.", 404);
+  }
+
+  if (!animal.identificacao) {
+    throw new AppError("Animal sem identificacao vinculada.", 409);
+  }
+
+  const imagem = await prisma.identificacaoImagem.findUnique({
+    where: { id: imagemId },
+    select: {
+      id: true,
+      identificacaoId: true,
+      imagemUrl: true,
+    },
+  });
+
+  if (!imagem || imagem.identificacaoId !== animal.identificacao.id) {
+    throw new AppError("Imagem de identificacao nao encontrada para este animal.", 404);
+  }
+
+  await prisma.identificacaoImagem.delete({
+    where: { id: imagemId },
+  });
+
+  await removeUploadByUrl(imagem.imagemUrl);
+
+  return prisma.animal.findUnique({
+    where: { id },
+    include: animalInclude(),
   });
 }
 
 async function deleteAnimal(id) {
   const existingAnimal = await prisma.animal.findUnique({
     where: { id },
-    select: { id: true },
+    select: {
+      id: true,
+      identificacao: {
+        select: {
+          imagens: {
+            select: {
+              imagemUrl: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!existingAnimal) {
@@ -187,6 +307,11 @@ async function deleteAnimal(id) {
   await prisma.animal.delete({
     where: { id },
   });
+
+  const imagens = existingAnimal.identificacao?.imagens ?? [];
+  for (const imagem of imagens) {
+    await removeUploadByUrl(imagem.imagemUrl);
+  }
 }
 
 module.exports = {
@@ -195,5 +320,7 @@ module.exports = {
   getAnimalById,
   getAnimalByCodigo,
   updateAnimal,
+  uploadAnimalIdentificacaoImagens,
+  deleteAnimalIdentificacaoImagem,
   deleteAnimal,
 };

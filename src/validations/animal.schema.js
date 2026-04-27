@@ -58,10 +58,30 @@ const getAnimalByCodigoSchema = z.object({
   query: emptySchema,
 });
 
+const animalImageParamsSchema = z.object({
+  id: z.string().uuid("ID deve ser um UUID valido."),
+});
+
+const uploadAnimalImagesSchema = z.object({
+  body: emptySchema,
+  params: animalImageParamsSchema,
+  query: emptySchema,
+});
+
+const deleteAnimalImageSchema = z.object({
+  body: emptySchema,
+  params: animalImageParamsSchema.extend({
+    imagemId: z.string().uuid("imagemId deve ser UUID valido."),
+  }),
+  query: emptySchema,
+});
+
 module.exports = {
   createAnimalSchema,
   listAnimaisSchema,
   getAnimalByIdSchema,
   getAnimalByCodigoSchema,
   updateAnimalSchema,
+  uploadAnimalImagesSchema,
+  deleteAnimalImageSchema,
 };

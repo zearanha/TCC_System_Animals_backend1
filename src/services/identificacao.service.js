@@ -31,6 +31,7 @@ async function createIdentificacao(payload) {
       animalId: payload.animalId,
     },
     include: {
+      imagens: true,
       animal: {
         include: {
           proprietario: true,

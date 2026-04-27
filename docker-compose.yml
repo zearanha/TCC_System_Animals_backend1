@@ -32,8 +32,22 @@ services:
       DEFAULT_ADMIN_EMAIL: admin@municipio.local
       DEFAULT_ADMIN_PASSWORD: admin123456
       DEFAULT_ADMIN_NAME: Administrador do Sistema
+      NOTIFICATION_SIMULATION: "${NOTIFICATION_SIMULATION:-false}"
+      NOTIFICATION_EMAIL_ENABLED: "${NOTIFICATION_EMAIL_ENABLED:-true}"
+      NOTIFICATION_WHATSAPP_ENABLED: "${NOTIFICATION_WHATSAPP_ENABLED:-true}"
+      SMTP_HOST: "${SMTP_HOST:-smtp.gmail.com}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_SECURE: "${SMTP_SECURE:-false}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASS: "${SMTP_PASS:-}"
+      SMTP_FROM: "${SMTP_FROM:-Sistema Municipal <nao-responder@municipio.local>}"
+      WHATSAPP_WEBHOOK_URL: "${WHATSAPP_WEBHOOK_URL:-}"
+      WHATSAPP_WEBHOOK_TOKEN: "${WHATSAPP_WEBHOOK_TOKEN:-}"
     ports:
       - "3002:3000"
+    volumes:
+      - uploads_data:/app/uploads
 
 volumes:
   postgres_data:
+  uploads_data:

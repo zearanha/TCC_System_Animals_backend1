@@ -1,11 +1,14 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const routes = require("./routes");
 const { logInfo } = require("./config/logger");
 const notFoundMiddleware = require("./middlewares/notFound.middleware");
 const errorMiddleware = require("./middlewares/error.middleware");
+const { ensureUploadsRoot } = require("./utils/uploads");
 
 const app = express();
+ensureUploadsRoot();
 
 const allowedOrigins = (
   process.env.CORS_ORIGINS ?? "http://localhost:3000,http://localhost:3001"
@@ -23,6 +26,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 app.use((req, res, next) => {
   const startedAt = Date.now();

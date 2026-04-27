@@ -39,6 +39,7 @@ model Proprietario {
   telefone    String?      @db.VarChar(20)
   email       String?      @db.VarChar(150)
   endereco    String?      @db.VarChar(255)
+  fotoPerfilUrl String?    @map("foto_perfil_url") @db.VarChar(500)
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
   animais     Animal[]
@@ -75,8 +76,21 @@ model Identificacao {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   animal    Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  imagens   IdentificacaoImagem[]
 
   @@map("identificacoes")
+}
+
+model IdentificacaoImagem {
+  id             String       @id @default(uuid()) @db.Uuid
+  identificacaoId String      @map("identificacao_id") @db.Uuid
+  imagemUrl      String       @map("imagem_url") @db.VarChar(500)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  identificacao  Identificacao @relation(fields: [identificacaoId], references: [id], onDelete: Cascade)
+
+  @@index([identificacaoId])
+  @@map("identificacao_imagens")
 }
 
 model Agente {

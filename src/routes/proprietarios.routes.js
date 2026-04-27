@@ -9,6 +9,7 @@ const {
   getProprietarioByIdSchema,
   listProprietariosSchema,
 } = require("../validations/proprietario.schema");
+const { uploadProprietarioFoto } = require("../middlewares/upload.middleware");
 
 const router = Router();
 
@@ -17,7 +18,30 @@ router.use(requireAuth, requireRoles(USER_ROLES.ADMIN));
 router.post("/", validate(createProprietarioSchema), controller.create);
 router.get("/", validate(listProprietariosSchema), controller.list);
 router.get("/:id", validate(getProprietarioByIdSchema), controller.getById);
-router.put("/:id", validate(updateProprietarioSchema), controller.update);
+router.put(
+  "/:id",
+  validate(updateProprietarioSchema),
+  uploadProprietarioFoto.single("foto"),
+  controller.update
+);
+router.post(
+  "/:id/foto",
+  validate(getProprietarioByIdSchema),
+  uploadProprietarioFoto.single("foto"),
+  controller.uploadFotoPerfil
+);
+router.put(
+  "/:id/foto",
+  validate(getProprietarioByIdSchema),
+  uploadProprietarioFoto.single("foto"),
+  controller.uploadFotoPerfil
+);
+router.patch(
+  "/:id/foto",
+  validate(getProprietarioByIdSchema),
+  uploadProprietarioFoto.single("foto"),
+  controller.uploadFotoPerfil
+);
 router.delete("/:id", validate(getProprietarioByIdSchema), controller.remove);
 
 module.exports = router;
