@@ -1,32 +1,12 @@
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: municipal_animais_db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: municipal_animais
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d municipal_animais"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   api:
     build: .
     container_name: municipal_animais_api
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
       PORT: 3000
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/municipal_animais?schema=public
+      DATABASE_URL: mongodb+srv://aranhafalcao10_db_user:ndophumRS1oTK4q2@systemanimals.3dczshl.mongodb.net/SystemAnimals?retryWrites=true&w=majority&appName=SystemAnimals
+      MONGODB_URI: mongodb+srv://aranhafalcao10_db_user:ndophumRS1oTK4q2@systemanimals.3dczshl.mongodb.net/SystemAnimals?retryWrites=true&w=majority&appName=SystemAnimals
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
       AUTH_SESSION_TTL_HOURS: 24
       DEFAULT_ADMIN_EMAIL: admin@municipio.local
@@ -49,5 +29,4 @@ services:
       - uploads_data:/app/uploads
 
 volumes:
-  postgres_data:
   uploads_data:

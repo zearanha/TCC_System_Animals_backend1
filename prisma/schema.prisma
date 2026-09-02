@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -33,35 +33,35 @@ enum UsuarioPerfil {
 }
 
 model Proprietario {
-  id          String       @id @default(uuid()) @db.Uuid
-  nome        String
-  cpf         String       @unique @db.VarChar(11)
-  telefone    String?      @db.VarChar(20)
-  email       String?      @db.VarChar(150)
-  endereco    String?      @db.VarChar(255)
-  fotoPerfilUrl String?    @map("foto_perfil_url") @db.VarChar(500)
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
-  animais     Animal[]
-  notificacoes Notificacao[]
-  usuario      Usuario?
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  nome          String
+  cpf           String        @unique
+  telefone      String?
+  email         String?
+  endereco      String?
+  fotoPerfilUrl String?       @map("foto_perfil_url")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  animais       Animal[]
+  notificacoes  Notificacao[]
+  usuario       Usuario?
 
   @@map("proprietarios")
 }
 
 model Animal {
-  id             String        @id @default(uuid()) @db.Uuid
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
   nome           String
-  especie        String        @db.VarChar(80)
-  raca           String?       @db.VarChar(80)
-  porte          String?       @db.VarChar(30)
-  sexo           String?       @db.VarChar(20)
-  cor            String?       @db.VarChar(50)
-  dataNascimento DateTime?     @map("data_nascimento")
-  proprietarioId String        @map("proprietario_id") @db.Uuid
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  proprietario   Proprietario  @relation(fields: [proprietarioId], references: [id], onDelete: Restrict)
+  especie        String
+  raca           String?
+  porte          String?
+  sexo           String?
+  cor            String?
+  dataNascimento DateTime?      @map("data_nascimento")
+  proprietarioId String         @map("proprietario_id") @db.ObjectId
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  proprietario   Proprietario   @relation(fields: [proprietarioId], references: [id])
   identificacao  Identificacao?
   ocorrencias    Ocorrencia[]
 
@@ -70,88 +70,88 @@ model Animal {
 }
 
 model Identificacao {
-  id        String   @id @default(uuid()) @db.Uuid
-  codigo    String   @unique @db.VarChar(6)
-  animalId  String   @unique @map("animal_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  animal    Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  id        String                 @id @default(auto()) @map("_id") @db.ObjectId
+  codigo    String                 @unique
+  animalId  String                 @unique @map("animal_id") @db.ObjectId
+  createdAt DateTime               @default(now()) @map("created_at")
+  updatedAt DateTime               @updatedAt @map("updated_at")
+  animal    Animal                 @relation(fields: [animalId], references: [id])
   imagens   IdentificacaoImagem[]
 
   @@map("identificacoes")
 }
 
 model IdentificacaoImagem {
-  id             String       @id @default(uuid()) @db.Uuid
-  identificacaoId String      @map("identificacao_id") @db.Uuid
-  imagemUrl      String       @map("imagem_url") @db.VarChar(500)
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  identificacao  Identificacao @relation(fields: [identificacaoId], references: [id], onDelete: Cascade)
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  identificacaoId String        @map("identificacao_id") @db.ObjectId
+  imagemUrl       String        @map("imagem_url")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  identificacao   Identificacao @relation(fields: [identificacaoId], references: [id])
 
   @@index([identificacaoId])
   @@map("identificacao_imagens")
 }
 
 model Agente {
-  id         String      @id @default(uuid()) @db.Uuid
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
   nome       String
-  matricula  String      @unique @db.VarChar(30)
-  telefone   String?     @db.VarChar(20)
-  email      String?     @db.VarChar(150)
+  matricula  String      @unique
+  telefone   String?
+  email      String?
   createdAt  DateTime    @default(now()) @map("created_at")
   updatedAt  DateTime    @updatedAt @map("updated_at")
   ocorrencias Ocorrencia[]
-  usuario     Usuario?
+  usuario    Usuario?
 
   @@map("agentes")
 }
 
 model Usuario {
-  id             String        @id @default(uuid()) @db.Uuid
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
   nome           String
-  email          String        @unique @db.VarChar(150)
-  senhaHash      String        @map("senha_hash") @db.VarChar(255)
+  email          String        @unique
+  senhaHash      String        @map("senha_hash")
   perfil         UsuarioPerfil
   ativo          Boolean       @default(true)
-  proprietarioId String?       @unique @map("proprietario_id") @db.Uuid
-  agenteId       String?       @unique @map("agente_id") @db.Uuid
+  proprietarioId String?       @unique @map("proprietario_id") @db.ObjectId
+  agenteId       String?       @unique @map("agente_id") @db.ObjectId
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
-  proprietario   Proprietario? @relation(fields: [proprietarioId], references: [id], onDelete: Restrict)
-  agente         Agente?       @relation(fields: [agenteId], references: [id], onDelete: Restrict)
+  proprietario   Proprietario? @relation(fields: [proprietarioId], references: [id])
+  agente         Agente?       @relation(fields: [agenteId], references: [id])
   sessoes        Sessao[]
 
   @@map("usuarios")
 }
 
 model Sessao {
-  id         String    @id @default(uuid()) @db.Uuid
-  token      String    @unique @db.VarChar(128)
-  usuarioId  String    @map("usuario_id") @db.Uuid
-  expiraEm   DateTime  @map("expira_em")
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  token      String   @unique
+  usuarioId  String   @map("usuario_id") @db.ObjectId
+  expiraEm   DateTime @map("expira_em")
   revogadaEm DateTime? @map("revogada_em")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-  usuario    Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId])
   @@map("sessoes")
 }
 
 model Ocorrencia {
-  id            String           @id @default(uuid()) @db.Uuid
-  animalId      String           @map("animal_id") @db.Uuid
-  agenteId      String           @map("agente_id") @db.Uuid
-  local         String           @db.VarChar(255)
-  descricao     String           @db.VarChar(500)
-  dataOcorrencia DateTime        @default(now()) @map("data_ocorrencia")
-  status        OcorrenciaStatus @default(ABERTA)
-  createdAt     DateTime         @default(now()) @map("created_at")
-  updatedAt     DateTime         @updatedAt @map("updated_at")
-  animal        Animal           @relation(fields: [animalId], references: [id], onDelete: Restrict)
-  agente        Agente           @relation(fields: [agenteId], references: [id], onDelete: Restrict)
-  notificacoes  Notificacao[]
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  animalId       String           @map("animal_id") @db.ObjectId
+  agenteId       String           @map("agente_id") @db.ObjectId
+  local          String
+  descricao      String
+  dataOcorrencia DateTime         @default(now()) @map("data_ocorrencia")
+  status         OcorrenciaStatus @default(ABERTA)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  animal         Animal           @relation(fields: [animalId], references: [id])
+  agente         Agente           @relation(fields: [agenteId], references: [id])
+  notificacoes   Notificacao[]
 
   @@index([animalId])
   @@index([agenteId])
@@ -159,17 +159,17 @@ model Ocorrencia {
 }
 
 model Notificacao {
-  id            String            @id @default(uuid()) @db.Uuid
-  ocorrenciaId  String            @map("ocorrencia_id") @db.Uuid
-  proprietarioId String           @map("proprietario_id") @db.Uuid
-  mensagem      String            @db.VarChar(500)
-  canal         NotificacaoCanal  @default(SMS)
-  status        NotificacaoStatus @default(PENDENTE)
-  dataEnvio     DateTime?         @map("data_envio")
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
-  ocorrencia    Ocorrencia        @relation(fields: [ocorrenciaId], references: [id], onDelete: Cascade)
-  proprietario  Proprietario      @relation(fields: [proprietarioId], references: [id], onDelete: Restrict)
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  ocorrenciaId   String           @map("ocorrencia_id") @db.ObjectId
+  proprietarioId String           @map("proprietario_id") @db.ObjectId
+  mensagem       String
+  canal          NotificacaoCanal @default(SMS)
+  status         NotificacaoStatus @default(PENDENTE)
+  dataEnvio      DateTime?        @map("data_envio")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  ocorrencia     Ocorrencia       @relation(fields: [ocorrenciaId], references: [id])
+  proprietario   Proprietario     @relation(fields: [proprietarioId], references: [id])
 
   @@index([ocorrenciaId])
   @@index([proprietarioId])

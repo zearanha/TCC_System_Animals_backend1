@@ -15,7 +15,8 @@ function toBoolean(value, fallback = false) {
 
 const env = {
   port: Number(process.env.PORT) || 3000,
-  databaseUrl: process.env.DATABASE_URL,
+  databaseUrl: process.env.DATABASE_URL || process.env.MONGODB_URI || process.env.MONGO_URI,
+  mongoUri: process.env.MONGODB_URI || process.env.MONGO_URI || process.env.DATABASE_URL,
   authSessionTtlHours: toPositiveNumber(process.env.AUTH_SESSION_TTL_HOURS, 24),
   defaultAdminEmail: process.env.DEFAULT_ADMIN_EMAIL || "admin@municipio.local",
   defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD || "admin123456",
